@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html>
 <head>
   <!--
@@ -46,6 +46,7 @@
 
   -->
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Nullboard</title>
   <link rel="icon" href="extras/favicon-16.png"/>
   <style>
@@ -220,7 +221,7 @@
 		-ms-user-select: none;
 		user-select: none;
 	}
-}
+
 	/***/
 	.clearfix:after,
 	.board:after,
@@ -262,7 +263,7 @@
 		user-select: none;
 	}
 
-	body.crowded .board {
+	.crowded .board {
 		margin-top: 28px;
 	}
 
@@ -689,7 +690,7 @@
 		background: #f8f9fb;
 	}
 
-	body.crowded .logo:hover {
+	.crowded .logo:hover {
 		background: #fff;
 		box-shadow: 0 1px 2px rgba(0,0,0,0.2);
 	}
@@ -1307,11 +1308,23 @@
 
 		.board .note {
 			box-shadow: none;
-			outline: 1px solid #ccc;
+			text-shadow: none !important;
+			outline: 1px solid #888;
+		}
+		.list {
+			outline: 1px solid #555;
+
+		}
+		.board .note .raw {
+			outline: none;
+			text-shadow: none;
 		}
 
-		.board .note.raw {
-			outline: none;
+		.board .head .text a,
+		.board .note .text a {
+			color: #333;
+			text-shadow: none;
+			text-decoration: underline;
 		}
 	}
 
@@ -1459,7 +1472,7 @@
 
 	.theme-dark .logo,
 	.theme-dark.crowded .logo:hover {
-		background: #09090A;
+		background: #09090A !important;
 	}
 
 	.theme-dark .logo a:hover {
@@ -1688,8 +1701,8 @@
 
 </body>
 
-<script src="extras/jquery-3.3.1.min.js"></script>
-<script>window.jQuery || document.write('<script src="https://code.jquery.com/jquery-3.3.1.min.js">\x3C/script>')</script>
+<script src="extras/jquery-3.6.0.min.js"></script>
+<script>window.jQuery || document.write('<script src="https://code.jquery.com/jquery-3.6.0.min.js">\x3C/script>')</script>
 
 <script type="text/javascript">
 
@@ -1697,6 +1710,15 @@
 	{
 		return Math.min(Math.max(this, min), max);
 	};
+
+	/*
+	 *	add a blank line to push 'Prevent this page from opening ...'
+	 *	tack-on from the actual message we are trying to display
+	 */
+	var confirm_org = window.confirm;
+	var alert_org   = window.alert;
+	window.confirm = function(msg) { return confirm_org(msg + "\n "); }
+	window.alert   = function(msg) { return alert_org  (msg + "\n "); }
 
 </script>
 
@@ -1726,6 +1748,14 @@
 
 		this.backupStatus = { };            // agentId => [ 'conf' ]
 	}
+
+	const default_backup_agents =
+	[
+		{ base: 'http://127.0.0.1:10001', auth: '' }, // local agent
+		{ base: '', auth: '' }                        // remote agent
+	];
+
+	//
 
 	function BoardMeta()
 	{
@@ -1964,7 +1994,7 @@
 			var meta = this.boardIndex.get(board_id);
 
 			if (! meta)
-				throw `Invalid board_id in nukeBoard(${board.id})`;
+				throw `Invalid board_id in nukeBoard(${board_id})`;
 
 			var title = meta.title + '';
 
@@ -2017,7 +2047,7 @@
 			var meta = this.boardIndex.get(board_id);
 
 			if (! meta)
-				throw `Invalid board_id in setBoardRevision(${board_id}, ${revision})`;
+				throw `Invalid board_id in setBoardUiSpot(${board_id}, ${ui_spot})`;
 
 			meta.ui_spot = ui_spot;
 
@@ -2080,22 +2110,26 @@
 			    agents[0].type != simp || agents[0].conf.base != 'http://127.0.0.1:10001' ||
 			    agents[1].type != simp)
 			{
+				const def = default_backup_agents;
+
 				console.log('Unexpected backup config, will re-initialize.', agents);
 
 				conf.backups.agents = [];
 
 				conf.backups.agents.push({
-					type: simp,
-					id: simp + '-' + (conf.backups.nextId++),
-					enabled: false,
-					conf: { base: 'http://127.0.0.1:10001', auth: '' }
+					// localhost
+					type    : simp,
+					id      : simp + '-' + (conf.backups.nextId++),
+					enabled : def[0].base && def[0].auth,
+					conf    : def[0],
 				})
 
 				conf.backups.agents.push({
-					type: simp,
-					id: simp + '-' + (conf.backups.nextId++),
-					enabled: false,
-					conf: { base: '', auth: '' }
+					// remote
+					type    : simp,
+					id      : simp + '-' + (conf.backups.nextId++),
+					enabled : def[1].base && def[1].auth,
+					conf    : def[1],
 				})
 
 				this.saveConfig();
@@ -3385,7 +3419,7 @@
 			'raw note.","raw":true,"min":false},{"text":"This is a collapsed note. Only its first line is visible. Useful f' +
 			'or keeping lists compact.","raw":false,"min":true}, {"text":"Links","raw":true,"min":false}, {"text":"Links pu' +
 			'lse on hover and can be opened via the right-click menu  -  https://nullboard.io","raw":false,"min":false}, {"tex' +
-			't":"Pressing CapsLock highlights all links and makes them left-clickable.","raw":false,"min":false}]},{"title"' +
+			't":"Pressing CapsLock or Control highlights all links and makes them left-clickable.","raw":false,"min":false}]},{"title"' +
 			':"More things to try","notes":[{"text":"\u2022   Drag notes around to rearrange.\\n\u2022   Works between the ' +
 			'lists too.","raw":false,"min":false},{"text":"\u2022   Click on a list name to edit.\\n\u2022   Enter to save,' +
 			' Esc to cancel.","raw":false,"min":false},{"text":"\u2022   Try adding a new list.\\n\u2022   Try deleting one' +
@@ -3454,7 +3488,7 @@
 			return "Required board properties are empty.";
 
 		if (foo.format != NB.blobVersion)
-			return `Unsupported blob format "${board.format}", expecting "${NB.blobVersion}".`;
+			return `Unsupported blob format "${foo.format}", expecting "${NB.blobVersion}".`;
 
 		return null;
 	}
@@ -3501,15 +3535,48 @@
 		if (! confirm(msg))
 			return false;
 
+		var to_open = '';
+
 		for (var i=0; i<data.length; i++)
 		{
 			var board = data[i];
+			var check_title = true;
+
+			// check ID
 
 			if (index.has(board.id))
 			{
-				console.log(`Import: board ${board.id} (${board.title}) will be assigned new ID`);
-				board.id = +new Date();
+				var which = (data.length == 1) ? "with the same ID" : board.id;
+
+				if (confirm(`Board ${which} already exists. Overwrite it?`) &&
+				    confirm(`OVERWRITE for sure?`))
+				{
+					console.log(`Import: ${board.id} (${board.title} - will overwrite existing one`);
+					check_title = false;
+				}
+				else
+				if (confirm(`Import the board under a new ID?`))
+				{
+					var new_id = +new Date();
+					console.log(`Import: ${board.id} (${board.title} - will import as ${new_id}`);
+					board.id = new_id;
+				}
+				else
+				{
+					console.log(`Import: ${board.id} (${board.title} - ID conflict, will not import`);
+					continue;
+				}
 			}
+
+			if (check_title)
+			{
+				var retitle = false;
+				index.forEach( have => { retitle |= (have.title == board.title) } );
+
+				if (retitle) board.title += ' (imported)';
+			}
+
+			// ok, do the deed
 
 			board.revision--; // save will ++ it back
 
@@ -3518,9 +3585,11 @@
 				alert(`Failed to save board ${board.id}. Import failed.`);
 				return false;
 			}
+
+			if (! to_open) to_open = data[0].id;
 		}
 
-		openBoard(data[0].id);
+		if (to_open) openBoard(to_open);
 	}
 
 	/*
@@ -4114,10 +4183,10 @@
 	function setRevealState(ev)
 	{
 		var raw = ev.originalEvent;
-		var caps = raw.getModifierState && raw.getModifierState( 'CapsLock' );
+		var do_reveal = raw.getModifierState && (raw.getModifierState( 'CapsLock' ) || raw.getModifierState( 'Control' ));
 
-		if (caps) $('body').addClass('reveal');
-		else      $('body').removeClass('reveal');
+		if (do_reveal) $('body').addClass('reveal');
+		else           $('body').removeClass('reveal');
 	}
 
 	//
@@ -4388,6 +4457,9 @@
 
 			if (conf.lineHeight)
 				setLineHeight(conf.lineHeight);
+
+			if (conf.listWidth)
+				setListWidth(conf.listWidth);
 
 			updateVarsAndLayout();
 		}
@@ -5022,7 +5094,7 @@
 	 */
 	var NB =
 	{
-		codeVersion: 20211210,
+		codeVersion: 20231105,
 		blobVersion: 20190412, // board blob format in Storage
 		board: null,
 		storage: null,
